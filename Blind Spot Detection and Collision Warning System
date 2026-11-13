@@ -1,0 +1,177 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// LCD address 0x27, 16 columns, 2 rows
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+#define TRIG1 5
+#define ECHO1 6
+
+// Ultrasonic sensor 2
+#define TRIG2 9
+#define ECHO2 10
+
+// Output pins - Sensor 1
+#define RED1 A0
+#define GREEN1 A1
+#define BUZZER1 11
+
+// Output pins - Sensor 2
+#define RED2 A2
+#define GREEN2 A3
+#define BUZZER2 12
+#define vib2 13
+
+long duration1, duration2;
+float distance1, distance2;
+
+void setup() {
+
+  Serial.begin(9600);
+
+  // Ultrasonic pins
+  pinMode(TRIG1, OUTPUT);
+  pinMode(ECHO1, INPUT);
+
+  pinMode(TRIG2, OUTPUT);
+  pinMode(ECHO2, INPUT);
+
+  // Output pins
+  pinMode(RED1, OUTPUT);
+  pinMode(GREEN1, OUTPUT);
+  pinMode(BUZZER1, OUTPUT);
+
+  pinMode(RED2, OUTPUT);
+  pinMode(GREEN2, OUTPUT);
+  pinMode(BUZZER2, OUTPUT);
+  pinMode(vib2, OUTPUT);
+   lcd.init();
+  lcd.backlight();
+
+  lcd.setCursor(0, 0);
+  lcd.print("ULTRASONIC SYS");
+
+  lcd.setCursor(0, 1);
+  lcd.print("SYSTEM STARTED");
+
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+
+  // Read ultrasonic sensor 1
+  distance1 = readDistance(TRIG1, ECHO1);
+
+  delay(50);
+
+  // Read ultrasonic sensor 2
+  distance2 = readDistance(TRIG2, ECHO2);
+
+  // Sensor 1 control
+  if (distance1 > 0 && distance1 < 20) {
+
+    digitalWrite(BUZZER1, HIGH);
+    digitalWrite(RED1, HIGH);
+    digitalWrite(GREEN1, LOW);
+    digitalWrite(vib2, HIGH);
+    delay(500);
+
+  } else {
+
+    digitalWrite(BUZZER1, LOW);
+    digitalWrite(RED1, LOW);
+    digitalWrite(GREEN1, HIGH);
+    digitalWrite(vib2, LOW);
+  }
+
+  // Sensor 2 control
+  if (distance2 > 0 && distance2 < 20) {
+
+    digitalWrite(BUZZER2, HIGH);
+    digitalWrite(RED2, HIGH);
+    digitalWrite(vib2, HIGH);
+    digitalWrite(GREEN2, LOW);
+    delay(500);
+
+  } else {
+
+    digitalWrite(BUZZER2, LOW);
+    digitalWrite(RED2, LOW);
+    digitalWrite(GREEN2, HIGH);
+    digitalWrite(vib2, LOW);
+
+  }
+
+  // Serial Monitor output
+  Serial.print("Distance 1: ");
+  Serial.print(distance1);
+  Serial.print(" cm");
+
+  Serial.print(" | Distance 2: ");
+  Serial.print(distance2);
+  Serial.println(" cm");
+
+  lcd.setCursor(0, 0);
+
+  lcd.print("D1:");
+
+  if (distance1 < 0) {
+    lcd.print("ERR ");
+  }
+  else {
+    lcd.print(distance1, 1);
+    lcd.print("cm ");
+  }
+
+  lcd.print("D2:");
+
+  if (distance2 < 0) {
+    lcd.print("ERR ");
+  }
+  else {
+    lcd.print(distance2, 1);
+    lcd.print("cm ");
+  }
+
+  // LCD display - Status
+  lcd.setCursor(0, 1);
+
+  if (distance1 > 0 && distance1 < 20) {
+    lcd.print("1:ALERT ");
+  }
+  else {
+    lcd.print("1:SAFE  ");
+  }
+
+  if (distance2 > 0 && distance2 < 20) {
+    lcd.print("2:ALERT ");
+  }
+  else {
+    lcd.print("2:SAFE  ");
+  }
+  
+  delay(100);
+}
+
+// Ultrasonic distance calculation
+float readDistance(int trigPin, int echoPin) {
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+
+  digitalWrite(trigPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH, 30000);
+
+  if (duration == 0) {
+    return -1;
+  }
+
+  float distance = duration * 0.0343 / 2;
+
+  return distance;
+}
